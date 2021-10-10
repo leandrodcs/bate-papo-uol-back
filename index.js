@@ -6,7 +6,7 @@ const server = express();
 server.use(cors());
 server.use(express.json());
 
-const participants = [
+let participants = [
     {
         name: "Maria",
         lastStatus: Date.now()
@@ -43,6 +43,22 @@ const messages = [
         time: dayjs().format('hh:mm:ss')
     },
 ];
+
+setInterval(() => {
+    participants.forEach(p => {
+        if((Date.now() - p.lastStatus) > 10000) {
+            messages.push({
+                from: p.name,
+                to: "Todos",
+                text: "sai da sala...",
+                type: "status",
+                time: dayjs().format('hh:mm:ss')
+            });
+        }
+    })
+    participants = participants.filter(p => Date.now() - p.lastStatus <= 10000)
+    console.log(participants);
+}, 15000);
 
 server.post(`/participants`, (req, res) => {
     const newUser = {
