@@ -10,6 +10,14 @@ const participants = [
     {
         name: "Maria",
         lastStatus: Date.now()
+    },
+    {
+        name: "Leandro",
+        lastStatus: Date.now()
+    },
+    {
+        name: "Marta",
+        lastStatus: Date.now()
     }
 ];
 const messages = [
@@ -87,6 +95,21 @@ server.get(`/messages`, (req, res) => {
     else {
         res.send(visibleMessages);
     }
-})
+});
+
+server.post(`/status`, (req, res) => {
+    const userToCheck = req.headers.user;
+    if(!participants.find(p => p.name === userToCheck)) {
+        res.sendStatus(400);
+    }
+    else {
+        participants.forEach(p => {
+            if(p.name === userToCheck) {
+                p.lastStatus = Date.now();
+            }
+        });
+        res.sendStatus(200);
+    }
+});
 
 server.listen(4000);
