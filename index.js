@@ -23,6 +23,7 @@ server.post(`/participants`, (req, res) => {
         res.sendStatus(400);
     }
     else {
+        participants.push(newUser);
         messages.push(
             {
                 from: req.body.name,
@@ -33,6 +34,23 @@ server.post(`/participants`, (req, res) => {
             }
         )
         res.status(200).send(messages);
+    }
+});
+
+server.get(`/participants`, (req, res) => {
+    res.send(participants);
+})
+
+server.post(`/messages`, (req, res) => {
+    const newMessage = {
+        from: req.headers.user,
+        ...req.body
+    };
+    if(!newMessage.to || !newMessage.text || (newMessage.type !== "message" && newMessage.type !== "private_message") || !participants.find(p => p.name === newMessage.from)) {
+        res.sendStatus(400);
+    }
+    else {
+        res.sendStatus(200);
     }
 });
 
