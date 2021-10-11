@@ -1,13 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
+import { stripHtml } from "string-strip-html";
 
 const server = express();
 server.use(cors());
 server.use(express.json());
 
-let participants = [];
+let participants = [
+    {
+        name: "Leandro",
+        lastStatus: Date.now()
+    }
+];
 const messages = [];
+// console.log(stripHtml(test).result.trim());
 
 setInterval(() => {
     participants.forEach(p => {
@@ -25,8 +32,9 @@ setInterval(() => {
 }, 15000);
 
 server.post(`/participants`, (req, res) => {
+    const name = stripHtml(req.body.name).result.trim();
     const newUser = {
-        ...req.body,
+        name,
         lastStatus: Date.now()
     }
     if(!newUser.name || participants.find((p) => p.name === newUser.name)) {
@@ -43,7 +51,7 @@ server.post(`/participants`, (req, res) => {
                 time: dayjs().format('hh:mm:ss')
             }
         )
-        res.status(200).send(messages);
+        res.status(200).send(participants);
     }
 });
 
@@ -53,8 +61,10 @@ server.get(`/participants`, (req, res) => {
 
 server.post(`/messages`, (req, res) => {
     const newMessage = {
-        from: req.headers.user,
-        ...req.body,
+        from: stripHtml(req.headers.user).result.trim(),
+        to: stripHtml(req.body.to).result.trim(),
+        text: stripHtml(req.body.text).result.trim(),
+        type: stripHtml(req.body.type).result.trim(),
         time: dayjs().format('hh:mm:ss')
     };
     if(!newMessage.to || !newMessage.text || (newMessage.type !== "message" && newMessage.type !== "private_message") || !participants.find(p => p.name === newMessage.from)) {
@@ -62,7 +72,7 @@ server.post(`/messages`, (req, res) => {
     }
     else {
         messages.push(newMessage);
-        res.sendStatus(200);
+        res.status(200).send(messages);
     }
 });
 
