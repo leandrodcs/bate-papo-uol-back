@@ -6,43 +6,8 @@ const server = express();
 server.use(cors());
 server.use(express.json());
 
-let participants = [
-    {
-        name: "Maria",
-        lastStatus: Date.now()
-    },
-    {
-        name: "Leandro",
-        lastStatus: Date.now()
-    },
-    {
-        name: "Marta",
-        lastStatus: Date.now()
-    }
-];
-const messages = [
-    {
-        from: "Maria",
-        to: "lester",
-        text: "teste 1",
-        type: "message",
-        time: dayjs().format('hh:mm:ss')
-    },
-    {
-        from: "Maria",
-        to: "lester",
-        text: "teste 2",
-        type: "message",
-        time: dayjs().format('hh:mm:ss')
-    },
-        {
-        from: "Maria",
-        to: "lester",
-        text: "teste 3",
-        type: "message",
-        time: dayjs().format('hh:mm:ss')
-    },
-];
+let participants = [];
+const messages = [];
 
 setInterval(() => {
     participants.forEach(p => {
@@ -57,7 +22,6 @@ setInterval(() => {
         }
     })
     participants = participants.filter(p => Date.now() - p.lastStatus <= 10000)
-    console.log(participants);
 }, 15000);
 
 server.post(`/participants`, (req, res) => {
