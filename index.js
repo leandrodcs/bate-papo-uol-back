@@ -3,22 +3,19 @@ import cors from 'cors';
 import dayjs from 'dayjs';
 import { stripHtml } from "string-strip-html";
 import Joi from 'joi';
+import fs from 'fs';
 
 const server = express();
 server.use(cors());
 server.use(express.json());
 
-let participants = [
-    {
-        name: "Leandro",
-        lastStatus: Date.now()
-    },
-    {
-        name: "Maria",
-        lastStatus: Date.now()
-    }
-];
-const messages = [];
+let participants = JSON.parse(fs.readFileSync(`database.json`)).participants;
+const messages = JSON.parse(fs.readFileSync(`database.json`)).messages;
+
+
+// fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
+
+console.log(participants, messages)
 
 const validateParticipant = data => {
     const schema = Joi.object({
@@ -51,6 +48,7 @@ setInterval(() => {
         }
     })
     participants = participants.filter(p => Date.now() - p.lastStatus <= 10000)
+    fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
 }, 15000);
 
 server.post(`/participants`, (req, res) => {
@@ -72,7 +70,8 @@ server.post(`/participants`, (req, res) => {
                 type: "status",
                 time: dayjs().format('hh:mm:ss')
             }
-        )
+        );
+        fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
         res.status(200).send(participants);
     }
 });
@@ -94,7 +93,7 @@ server.post(`/messages`, (req, res) => {
     }
     else {
         messages.push(newMessage);
-        console.log(newMessage);
+        fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
         res.status(200).send(messages);
     }
 });
