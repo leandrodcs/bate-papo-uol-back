@@ -12,9 +12,6 @@ server.use(express.json());
 let participants = JSON.parse(fs.readFileSync(`database.json`)).participants;
 const messages = JSON.parse(fs.readFileSync(`database.json`)).messages;
 
-
-// fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
-
 console.log(participants, messages)
 
 const validateParticipant = data => {
