@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
 import { stripHtml } from "string-strip-html";
+import Joi from 'joi';
 
 const server = express();
 server.use(cors());
@@ -11,10 +12,31 @@ let participants = [
     {
         name: "Leandro",
         lastStatus: Date.now()
+    },
+    {
+        name: "Maria",
+        lastStatus: Date.now()
     }
 ];
 const messages = [];
-// console.log(stripHtml(test).result.trim());
+
+const validateParticipant = data => {
+    const schema = Joi.object({
+        name: Joi.string().min(1).max(20).required()
+    }).unknown();
+
+    return schema.validate(data).error;
+}
+
+const validateMessage = data => {
+    const schema = Joi.object({
+        to: Joi.string().min(1).required(),
+        text: Joi.string().min(1).required(),
+        type: Joi.string().valid("message").valid("private_message").required()
+    }).unknown();
+    
+    return schema.validate(data).error;
+}
 
 setInterval(() => {
     participants.forEach(p => {
@@ -37,7 +59,7 @@ server.post(`/participants`, (req, res) => {
         name,
         lastStatus: Date.now()
     }
-    if(!newUser.name || participants.find((p) => p.name === newUser.name)) {
+    if(participants.find((p) => p.name === newUser.name) || validateParticipant(newUser)) {
         res.sendStatus(400);
     }
     else {
@@ -67,11 +89,12 @@ server.post(`/messages`, (req, res) => {
         type: stripHtml(req.body.type).result.trim(),
         time: dayjs().format('hh:mm:ss')
     };
-    if(!newMessage.to || !newMessage.text || (newMessage.type !== "message" && newMessage.type !== "private_message") || !participants.find(p => p.name === newMessage.from)) {
+    if(!participants.find(p => p.name === newMessage.from) || validateMessage(newMessage)) {
         res.sendStatus(400);
     }
     else {
         messages.push(newMessage);
+        console.log(newMessage);
         res.status(200).send(messages);
     }
 });
