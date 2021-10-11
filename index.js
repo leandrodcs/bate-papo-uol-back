@@ -1,13 +1,39 @@
 import express from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
+import { stripHtml } from "string-strip-html";
+import Joi from 'joi';
+import fs from 'fs';
 
 const server = express();
 server.use(cors());
 server.use(express.json());
 
-let participants = [];
-const messages = [];
+let participants = JSON.parse(fs.readFileSync(`database.json`)).participants;
+const messages = JSON.parse(fs.readFileSync(`database.json`)).messages;
+
+
+// fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
+
+console.log(participants, messages)
+
+const validateParticipant = data => {
+    const schema = Joi.object({
+        name: Joi.string().min(1).max(20).required()
+    }).unknown();
+
+    return schema.validate(data).error;
+}
+
+const validateMessage = data => {
+    const schema = Joi.object({
+        to: Joi.string().min(1).required(),
+        text: Joi.string().min(1).required(),
+        type: Joi.string().valid("message").valid("private_message").required()
+    }).unknown();
+    
+    return schema.validate(data).error;
+}
 
 setInterval(() => {
     participants.forEach(p => {
@@ -22,14 +48,16 @@ setInterval(() => {
         }
     })
     participants = participants.filter(p => Date.now() - p.lastStatus <= 10000)
+    fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
 }, 15000);
 
 server.post(`/participants`, (req, res) => {
+    const name = stripHtml(req.body.name).result.trim();
     const newUser = {
-        ...req.body,
+        name,
         lastStatus: Date.now()
     }
-    if(!newUser.name || participants.find((p) => p.name === newUser.name)) {
+    if(participants.find((p) => p.name === newUser.name) || validateParticipant(newUser)) {
         res.sendStatus(400);
     }
     else {
@@ -42,8 +70,9 @@ server.post(`/participants`, (req, res) => {
                 type: "status",
                 time: dayjs().format('hh:mm:ss')
             }
-        )
-        res.status(200).send(messages);
+        );
+        fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
+        res.status(200).send(participants);
     }
 });
 
@@ -53,16 +82,19 @@ server.get(`/participants`, (req, res) => {
 
 server.post(`/messages`, (req, res) => {
     const newMessage = {
-        from: req.headers.user,
-        ...req.body,
+        from: stripHtml(req.headers.user).result.trim(),
+        to: stripHtml(req.body.to).result.trim(),
+        text: stripHtml(req.body.text).result.trim(),
+        type: stripHtml(req.body.type).result.trim(),
         time: dayjs().format('hh:mm:ss')
     };
-    if(!newMessage.to || !newMessage.text || (newMessage.type !== "message" && newMessage.type !== "private_message") || !participants.find(p => p.name === newMessage.from)) {
+    if(!participants.find(p => p.name === newMessage.from) || validateMessage(newMessage)) {
         res.sendStatus(400);
     }
     else {
         messages.push(newMessage);
-        res.sendStatus(200);
+        fs.writeFileSync(`database.json`, JSON.stringify({participants, messages}));
+        res.status(200).send(messages);
     }
 });
 
